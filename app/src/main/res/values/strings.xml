@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">LudoMuseConfig</string>
+    <string name="action_settings">Paramètres</string>
+    <string name="action_search">Rechercher</string>
+</resources>
