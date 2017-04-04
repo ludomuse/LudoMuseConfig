@@ -11,6 +11,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.StringBuilderPrinter;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -19,9 +20,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
@@ -86,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.action_add) {
             return true;
         }
         return super.onOptionsItemSelected(item);
@@ -151,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (subJSONs != null) {
                     for (String subJSON : subJSONs) {
-                        jsonFiles.add(subfolder + "/" + subJSON);
+                        jsonFiles.add(subfolder + "/" + subJSON.replace(".json", ""));
                     }
                 }
             }
@@ -164,12 +169,32 @@ public class MainActivity extends AppCompatActivity {
         final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.text_view, jsonFiles);
         view.setAdapter(adapter);
 
+        final File confFile = new File(ludoMuseRoot + "/LudoMuse.conf");
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(confFile));
+            String selectedJson = br.readLine();
+            br.close();
+            selectedJson = selectedJson.replace(".json", "");
+            if (jsonFiles.contains(selectedJson))
+            {
+                MenuItem actionRun = (MenuItem) findViewById(R.id.action_run);
+                actionRun.setIcon(getResources().getDrawable(R.drawable.ic_action_playback_play));
+
+                // TODO set icon on current json file
+                int selectedItem = adapter.getPosition(selectedJson);
+                View selectedView = adapter.getView(selectedItem, null, view);
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Log.d("LUDOCONFIG", id + " at " + position);
-                String filename = adapter.getItem(position);
-                File confFile = new File(ludoMuseRoot + "/LudoMuse.conf");
+                String filename = adapter.getItem(position) + ".json";
                 FileOutputStream outputStream;
                 try {
                     outputStream = new FileOutputStream(confFile);
