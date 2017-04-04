@@ -1,6 +1,7 @@
 package com.ihmtek.ludomuseconfig;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
@@ -122,10 +123,10 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayList<String> jsonFiles = new ArrayList<>();
 
-        String[] children = ludoMuseRoot.list(new FilenameFilter() {
+        String[] subfolders = ludoMuseRoot.list(new FilenameFilter() {
             @Override
-            public boolean accept(File dir, String name) {
-                if (name.endsWith(".json") && !name.equals("main.json")) {
+            public boolean accept(File file, String name) {
+                if (file.isDirectory()) {
                     return true;
                 }
 
@@ -133,10 +134,26 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        if (children != null) {
+        if (subfolders != null) {
 
-            for (String child : children) {
-                jsonFiles.add(child);
+            for (String subfolder : subfolders) {
+                File fSubfolder = new File(ludoMuseRoot.getAbsolutePath() + "/" + subfolder);
+                String[] subJSONs = fSubfolder.list(new FilenameFilter() {
+                    @Override
+                    public boolean accept(File file, String s) {
+                        if (s.endsWith(".json"))
+                        {
+                            return true;
+                        }
+                        return false;
+                    }
+                });
+
+                if (subJSONs != null) {
+                    for (String subJSON : subJSONs) {
+                        jsonFiles.add(subfolder + "/" + subJSON);
+                    }
+                }
             }
 
         } else {
@@ -152,10 +169,12 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Log.d("LUDOCONFIG", id + " at " + position);
                 String filename = adapter.getItem(position);
-                File selected = new File(ludoMuseRoot + "/" + filename);
-                File main = new File(ludoMuseRoot + "/main.json");
+                File confFile = new File(ludoMuseRoot + "/LudoMuse.conf");
+                FileOutputStream outputStream;
                 try {
-                    copyFile(selected, main);
+                    outputStream = new FileOutputStream(confFile);
+                    outputStream.write(filename.getBytes());
+                    outputStream.close();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
