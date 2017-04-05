@@ -43,4 +43,5 @@ public class JsonFileAdapter extends ArrayAdapter<Model> {
         return rowView;
     }
 
+
 }

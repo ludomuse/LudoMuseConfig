@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
 
         Log.d("LUDOCONFIG", ludoMuseRoot.getAbsolutePath());
 
-        ArrayList<String> jsonFiles = new ArrayList<>();
+        ArrayList<Model> jsonFiles = new ArrayList<>();
 
         String[] subfolders = ludoMuseRoot.list(new FilenameFilter() {
             @Override
@@ -193,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
 
                 if (subJSONs != null) {
                     for (String subJSON : subJSONs) {
-                        jsonFiles.add(subfolder + "/" + subJSON.replace(".json", ""));
+                        jsonFiles.add(new Model(R.drawable.ic_none, subfolder + "/" + subJSON.replace(".json", "")));
                     }
                 }
             }
@@ -203,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         ListView view = (ListView) findViewById(R.id.list_view);
-        final ArrayAdapter<String> adapter = new ArrayAdapter<>(this, R.layout.text_view, jsonFiles);
+        final JsonFileAdapter adapter = new JsonFileAdapter(this, jsonFiles);
         view.setAdapter(adapter);
 
         final File confFile = new File(ludoMuseRoot + "/LudoMuse.conf");
@@ -213,19 +213,29 @@ public class MainActivity extends AppCompatActivity {
             String selectedJson = br.readLine();
             br.close();
             selectedJson = selectedJson.replace(".json", "");
-            if (jsonFiles.contains(selectedJson))
+
+            boolean foundCurrentScenario = false;
+
+            for (int i = 0; i < jsonFiles.size(); ++i)
             {
+                Model selectedModel = jsonFiles.get(i);
+                if (selectedModel.getText().equals(selectedJson))
+                {
+                    runMenuItem.setIcon(getResources().getDrawable(R.drawable.ic_action_playback_play));
+                    runMessage = "Lancement de LudoMuse ...";
+                    canRunLudoMuse = true;
 
-
-                runMenuItem.setIcon(getResources().getDrawable(R.drawable.ic_action_playback_play));
-                runMessage = "Lancement de LudoMuse ...";
-                canRunLudoMuse = true;
-
-                // TODO set icon on current json file
-                int selectedItem = adapter.getPosition(selectedJson);
-                View selectedView = adapter.getView(selectedItem, null, view);
+                    // TODO set icon on current json file
+                    selectedModel.setIcon(R.drawable.ic_action_tick);
+                    foundCurrentScenario = true;
+                }
+                else
+                {
+                    selectedModel.setIcon(R.drawable.ic_none);
+                }
             }
-            else
+
+            if (!foundCurrentScenario)
             {
                 runMenuItem.setIcon(getResources().getDrawable(R.drawable.ic_action_warning));
                 runMessage = "Fichier de scénario introuvable";
@@ -244,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 Log.d("LUDOCONFIG", id + " at " + position);
-                String filename = adapter.getItem(position) + ".json";
+                String filename = adapter.getItem(position).getText() + ".json";
                 FileOutputStream outputStream;
                 try {
                     outputStream = new FileOutputStream(confFile);

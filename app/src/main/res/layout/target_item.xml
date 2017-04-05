@@ -19,11 +19,13 @@
 
     <TextView
         android:id="@+id/text_item"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/item_icon"
-        android:textSize="18dp"
-        android:textAlignment="center"/>
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:textSize="18dip"
+        android:padding="10dip"
+        android:paddingStart="75dip"
+        android:textStyle="bold"
+        android:layout_toRightOf="@+id/item_icon"/>
 
 
 
