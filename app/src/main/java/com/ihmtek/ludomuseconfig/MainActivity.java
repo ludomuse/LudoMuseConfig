@@ -1,8 +1,11 @@
 package com.ihmtek.ludomuseconfig;
 
 import android.Manifest;
+import android.content.ClipData;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.graphics.drawable.Icon;
 import android.os.Bundle;
 import android.os.Environment;
@@ -19,6 +22,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -37,6 +41,11 @@ import java.util.ArrayList;
 public class MainActivity extends AppCompatActivity {
 
     static final int READ_WRITE_EXTERNAL_STORAGE = 0;
+
+    private MenuItem runMenuItem;
+    private boolean canInitJsonFiles = false;
+    private String runMessage = "";
+    private boolean canRunLudoMuse = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +73,7 @@ public class MainActivity extends AppCompatActivity {
         }
         else
         {
-            initJsonFiles();
+            canInitJsonFiles = true;
         }
 
     }
@@ -77,6 +86,11 @@ public class MainActivity extends AppCompatActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
+        runMenuItem = menu.findItem(R.id.action_run);
+        if (canInitJsonFiles)
+        {
+            initJsonFiles();
+        }
         return true;
     }
 
@@ -91,9 +105,34 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_add) {
-            return true;
+        switch (id)
+        {
+            case R.id.action_add:
+                Toast addFeedback = Toast.makeText(this, "Import d'un package LudoMuse ...", Toast.LENGTH_LONG);
+                addFeedback.show();
+                break;
+            case R.id.action_run:
+                Toast runFeedback = Toast.makeText(this, runMessage, Toast.LENGTH_LONG);
+                runFeedback.show();
+
+                if (canRunLudoMuse)
+                {
+                    Intent ludoMuseIntent = getPackageManager().getLaunchIntentForPackage("com.IHMTEK.LudoMuse");
+                    if (ludoMuseIntent != null) {
+                        startActivity(ludoMuseIntent);
+                    } else {
+                        Toast error = Toast.makeText(this, "LudoMuse introuvable. L'application est-elle installée ?", Toast.LENGTH_LONG);
+                        error.show();
+                    }
+                }
+                break;
+            case R.id.action_sync:
+                Toast syncFeedback = Toast.makeText(this, "Rechargement des scénarios ...", Toast.LENGTH_LONG);
+                syncFeedback.show();
+                initJsonFiles();
+                break;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -108,9 +147,7 @@ public class MainActivity extends AppCompatActivity {
                 && grantResults[0] == PackageManager.PERMISSION_GRANTED
                 && grantResults[1] == PackageManager.PERMISSION_GRANTED)
         {
-
-
-            initJsonFiles();
+            canInitJsonFiles = true;
         }
 
     }
@@ -178,16 +215,29 @@ public class MainActivity extends AppCompatActivity {
             selectedJson = selectedJson.replace(".json", "");
             if (jsonFiles.contains(selectedJson))
             {
-                MenuItem actionRun = (MenuItem) findViewById(R.id.action_run);
-                actionRun.setIcon(getResources().getDrawable(R.drawable.ic_action_playback_play));
+
+
+                runMenuItem.setIcon(getResources().getDrawable(R.drawable.ic_action_playback_play));
+                runMessage = "Lancement de LudoMuse ...";
+                canRunLudoMuse = true;
 
                 // TODO set icon on current json file
                 int selectedItem = adapter.getPosition(selectedJson);
                 View selectedView = adapter.getView(selectedItem, null, view);
-
             }
+            else
+            {
+                runMenuItem.setIcon(getResources().getDrawable(R.drawable.ic_action_warning));
+                runMessage = "Fichier de scénario introuvable";
+                canRunLudoMuse = false;
+            }
+
+
         } catch (IOException e) {
             e.printStackTrace();
+            runMenuItem.setIcon(getResources().getDrawable(R.drawable.ic_action_warning));
+            runMessage = "Fichier de configuration LudoMuse introuvable";
+            canRunLudoMuse = false;
         }
 
         view.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -200,6 +250,7 @@ public class MainActivity extends AppCompatActivity {
                     outputStream = new FileOutputStream(confFile);
                     outputStream.write(filename.getBytes());
                     outputStream.close();
+                    initJsonFiles();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
