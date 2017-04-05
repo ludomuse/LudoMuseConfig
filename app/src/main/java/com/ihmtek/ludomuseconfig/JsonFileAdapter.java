@@ -5,6 +5,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -14,14 +15,14 @@ import java.util.ArrayList;
  */
 
 
-public class JsonFileAdapter extends ArrayAdapter<String> {
+public class JsonFileAdapter extends ArrayAdapter<Model> {
 
     private final Context context;
-    private final ArrayList<String> modelsArrayList;
+    private final ArrayList<Model> modelsArrayList;
 
     public JsonFileAdapter(Context context, ArrayList modelsArrayList)
     {
-        super(context, R.layout.text_view, modelsArrayList);
+        super(context, R.layout.target_item, modelsArrayList);
         this.context = context;
         this.modelsArrayList = modelsArrayList;
     }
@@ -31,12 +32,13 @@ public class JsonFileAdapter extends ArrayAdapter<String> {
     {
         LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-        View rowView = null;
+        View rowView = inflater.inflate(R.layout.target_item, parent, false);
 
-        rowView = inflater.inflate(R.layout.target_item, parent, false);
+        ImageView imageView = (ImageView) rowView.findViewById(R.id.item_icon);
+        imageView.setImageResource(modelsArrayList.get(position).getIcon());
 
         TextView textView = (TextView) rowView.findViewById(R.id.text_item);
-        textView.setText(modelsArrayList.get(position));
+        textView.setText(modelsArrayList.get(position).getText());
 
         return rowView;
     }

@@ -14,19 +14,17 @@
         android:layout_marginLeft="8dp"
         android:layout_marginRight="8dp"
         android:layout_marginTop="8dp"
-        android:src="@android:drawable/radiobutton_off_background"
+        android:src="@drawable/ic_none"
         />
 
-    <TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    <TextView
         android:id="@+id/text_item"
-        android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        android:textSize="20dip"
-        android:textStyle="bold"
-        android:padding="30dip"
-        android:textAlignment="center">
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toRightOf="@+id/item_icon"
+        android:textSize="18dp"
+        android:textAlignment="center"/>
 
-    </TextView>
 
 
 </RelativeLayout>
