@@ -2,13 +2,15 @@ package com.ihmtek.ludomuseconfig;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -21,9 +23,11 @@ import android.widget.AdapterView;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FilenameFilter;
@@ -31,6 +35,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -42,6 +48,11 @@ public class MainActivity extends AppCompatActivity {
     private boolean canInitJsonFiles = false;
     private String runMessage = "";
     private boolean canRunLudoMuse = false;
+
+    private final File ludoMuseRoot = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/LudoMuse/");
+
+    private Handler handler;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -104,11 +115,11 @@ public class MainActivity extends AppCompatActivity {
         switch (id)
         {
             case R.id.action_add:
-                Toast addFeedback = Toast.makeText(this, "Import d'un package LudoMuse ...", Toast.LENGTH_LONG);
+                Toast addFeedback = Toast.makeText(this, "Import d'une archive LudoMuse ...", Toast.LENGTH_LONG);
                 addFeedback.show();
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 //intent.addCategory(Intent.CATEGORY_OPENABLE);
-                intent.setType("*/*");
+                intent.setType("application/octet-stream");
                 startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE);
                 break;
             case R.id.action_run:
@@ -127,9 +138,9 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             case R.id.action_sync:
-                Toast syncFeedback = Toast.makeText(this, "Rechargement des scénarios ...", Toast.LENGTH_LONG);
-                syncFeedback.show();
                 initJsonFiles();
+                Toast syncFeedback = Toast.makeText(this, "Rechargement des scénarios terminé", Toast.LENGTH_LONG);
+                syncFeedback.show();
                 break;
         }
 
@@ -158,20 +169,121 @@ public class MainActivity extends AppCompatActivity {
     {
         if (requestCode == OPEN_DOCUMENT_REQUEST_CODE && resultCode == Activity.RESULT_OK)
         {
-            Uri uri = null;
             if (resultData != null)
             {
-                uri = resultData.getData();
+                final Uri uri = resultData.getData();
                 Log.i("LUDOCONFIG", "open zip : " + uri.getEncodedPath());
+                if (!uri.getPath().endsWith(".lm"))
+                {
+                    Toast.makeText(this, "Le fichier sélectionné n'est pas une archive LudoMuse", Toast.LENGTH_SHORT).show();
+                }
+                else
+                {
+
+                    final MainActivity self = this;
+                    final ProgressDialog dialog = new ProgressDialog(this);
+                    dialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+                    dialog.setMax(1);
+                    dialog.setTitle("Extraction de l'archive LudoMuse en cours :");
+                    dialog.setMessage("Extraction en cours ...");
+                    dialog.setCancelable(false);
+                    dialog.show();
+
+                    handler = new Handler(Looper.getMainLooper()) {
+
+                        @Override
+                        public void handleMessage(Message msg) {
+                            switch (msg.what) {
+                                case 0: // update progress
+                                    dialog.setMessage((String) msg.obj);
+                                    break;
+                                case 1: // extraction successful
+                                    dialog.dismiss();
+                                    initJsonFiles();
+                                    break;
+                                case 2: // extraction error
+                                    dialog.dismiss();
+                                    Toast.makeText(self, "Une erreur s'est produite lors de l'extraction de l'archive LudoMuse", Toast.LENGTH_LONG).show();
+                                    break;
+                            }
+                        }
+                    };
+
+                    Thread thread = new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            try {
+
+                                InputStream inputStream = getContentResolver().openInputStream(uri);
+                                ZipInputStream zis = new ZipInputStream(new BufferedInputStream(inputStream));
+                                ZipEntry entry;
+                                String filename;
+                                byte[] buffer = new byte[1024];
+                                int count;
+
+                                while ((entry = zis.getNextEntry()) != null)
+                                {
+                                    filename = entry.getName();
+
+                                    if (entry.isDirectory())
+                                    {
+                                        File fmd = new File(ludoMuseRoot + "/" + filename);
+                                        fmd.mkdirs();
+                                        continue;
+                                    }
+
+                                    Log.d("LUDOCONFIG", "extracting : " + ludoMuseRoot + "/" + filename);
+                                    self.handleExtractionProgress(filename);
+                                    FileOutputStream fout = new FileOutputStream(ludoMuseRoot + "/" + filename);
+
+                                    while ((count = zis.read(buffer)) != -1)
+                                    {
+                                        fout.write(buffer, 0, count);
+                                    }
+
+                                    fout.close();
+                                    zis.closeEntry();
+                                }
+
+                                Log.d("LUDOCONFIG", "finished extraction");
+
+                                zis.close();
+
+                                self.handleExtractionSuccess(true);
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                                self.handleExtractionSuccess(false);
+                            }
+                        }
+                    });
+
+                    thread.start();
+
+                }
             }
         }
     }
 
 
+    protected void handleExtractionProgress(String currentFile)
+    {
+        Message message = handler.obtainMessage(0, currentFile);
+        message.sendToTarget();
+    }
+
+    protected void handleExtractionSuccess(boolean success)
+    {
+        int code = success ? 1 : 2;
+        Message message = handler.obtainMessage(code);
+        message.sendToTarget();
+
+    }
+
 
     private void initJsonFiles()
     {
-        final File ludoMuseRoot = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + "/LudoMuse/");
         if (!ludoMuseRoot.exists()) {
             Log.d("LUDOCONFIG", "creating directory " + ludoMuseRoot.getAbsolutePath());
             Log.d("LUDOCONFIG", "success ? " + ludoMuseRoot.mkdir());
