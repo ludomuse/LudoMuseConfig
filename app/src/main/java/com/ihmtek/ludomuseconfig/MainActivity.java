@@ -226,11 +226,16 @@ public class MainActivity extends AppCompatActivity {
                                 {
                                     filename = entry.getName();
 
+                                    File fmd = new File(ludoMuseRoot + "/" + filename);
                                     if (entry.isDirectory())
                                     {
-                                        File fmd = new File(ludoMuseRoot + "/" + filename);
                                         fmd.mkdirs();
                                         continue;
+                                    }
+                                    else
+                                    {
+                                        fmd = fmd.getParentFile();
+                                        fmd.mkdirs();
                                     }
 
                                     Log.d("LUDOCONFIG", "extracting : " + ludoMuseRoot + "/" + filename);
