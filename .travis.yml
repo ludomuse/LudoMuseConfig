@@ -23,12 +23,12 @@ android:
     - sys-img-armeabi-v7a-android-22
     #- sys-img-armeabi-v7a-android-17
 
-    licenses:
-       - 'android-sdk-license-.+'
+  licenses:
+    - 'android-sdk-license-.+'
 
 env:
   global:
-   # install timeout in minutes (2 minutes by default)
+  # install timeout in minutes (2 minutes by default)
     - ADB_INSTALL_TIMEOUT=8
 
 # Emulator Management: Create, Start and Wait
