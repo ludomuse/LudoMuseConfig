@@ -41,3 +41,4 @@ android:
 script:
 #  - android list target
   - ./gradlew #connectedAndroidTest
+  - ./gradlew assembleDebug
