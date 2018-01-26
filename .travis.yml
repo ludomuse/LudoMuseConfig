@@ -40,5 +40,25 @@ android:
 
 script:
 #  - android list target
-  - ./gradlew #connectedAndroidTest
+  #- ./gradlew #connectedAndroidTest
   - ./gradlew assembleDebug
+  
+  
+before_deploy:
+  - mv $TRAVIS_BUILD_DIR/app/build/outputs/apk/app-debug.apk $HOME/LudoMuseConfig.apk
+
+deploy:
+  - provider: script
+    script: curl -u $UPLOAD_USER:$UPLOAD_PWD -T $HOME/LudoMuseConfig.apk $UPLOAD_SERVER/LudoMuseConfig-$TRAVIS_BUILD_NUMBER.apk
+    skip_cleanup: true
+    on:
+      branch: master
+
+  - provider: releases
+    api_key:
+      secure: $GITHUB_TOKEN
+    file: "$HOME/LudoMuseConfig.apk"
+    skip_cleanup: true
+    on:
+      tags: true
+    branch: master
