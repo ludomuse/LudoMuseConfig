@@ -49,7 +49,7 @@ before_deploy:
 
 deploy:
   - provider: script
-    script: curl -u $UPLOAD_USER:$UPLOAD_PWD -T $HOME/LudoMuseConfig.apk $UPLOAD_SERVER/LudoMuseConfig-$TRAVIS_BUILD_NUMBER.apk
+    script: curl -u $UPLOAD_USER:$UPLOAD_PWD -T $HOME/LudoMuseConfig.apk $UPLOAD_SERVER/LudoMuseConfig/LudoMuseConfig-$TRAVIS_BUILD_NUMBER.apk
     skip_cleanup: true
     on:
       branch: master
